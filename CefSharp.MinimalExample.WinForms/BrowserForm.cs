@@ -4,6 +4,8 @@
 
 using CefSharp.MinimalExample.WinForms.Controls;
 using CefSharp.WinForms;
+using CefSharp.WinForms.Handler;
+using CefSharp.WinForms.Host;
 using System;
 using System.Windows.Forms;
 
@@ -24,12 +26,42 @@ namespace CefSharp.MinimalExample.WinForms
             InitializeComponent();
 
             Text = title;
-            WindowState = FormWindowState.Maximized;
 
             browser = new ChromiumWebBrowser("www.google.com");
             toolStripContainer.ContentPanel.Controls.Add(browser);
 
-            browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
+			var popup = default(Form);
+
+			browser.LifeSpanHandler = LifeSpanHandler
+				.Create(() =>
+				{
+					object browser = new ChromiumWebBrowser("about:blank");
+
+					return browser as ChromiumHostControl;
+				})
+				.OnBeforePopupCreated((webbrowser, browser, frame, url, name, disposition, userGesture, settings) =>
+				{
+					return PopupCreation.Continue;
+				})
+				.OnPopupCreated((control, url) =>
+				{
+					control.Dock = DockStyle.Fill;
+					popup = new BrowserForm { Text = "Popup", Height = 450, Width = 550 };
+					popup.Controls.Add(control);
+					popup.Show();
+				})
+				.OnPopupDestroyed((control, browser) =>
+				{
+					popup.Close();
+
+					if (!control.IsDisposed && control.IsHandleCreated)
+					{
+						control.Dispose();
+					}
+				})
+				.Build();
+
+			browser.IsBrowserInitializedChanged += OnIsBrowserInitializedChanged;
             browser.LoadingStateChanged += OnLoadingStateChanged;
             browser.ConsoleMessage += OnBrowserConsoleMessage;
             browser.StatusMessage += OnBrowserStatusMessage;
