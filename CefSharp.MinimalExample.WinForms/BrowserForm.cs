@@ -33,12 +33,7 @@ namespace CefSharp.MinimalExample.WinForms
 			var popup = default(Form);
 
 			browser.LifeSpanHandler = LifeSpanHandler
-				.Create(() =>
-				{
-					object browser = new ChromiumWebBrowser("about:blank");
-
-					return browser as ChromiumHostControl;
-				})
+				.Create()
 				.OnBeforePopupCreated((webbrowser, browser, frame, url, name, disposition, userGesture, settings) =>
 				{
 					return PopupCreation.Continue;
